@@ -1,6 +1,8 @@
 def selectedAe2Version = providers.gradleProperty("ae2Version").get()
 
 dependencies {
+    testImplementation("junit:junit:4.13.2")
+
     compileOnly("com.github.GTNewHorizons:Applied-Energistics-2-Unofficial:${selectedAe2Version}:dev") {
         transitive = false
     }
