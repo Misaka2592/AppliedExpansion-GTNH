@@ -120,6 +120,8 @@ wait_for_client_connection() {
 }
 
 mkdir -p "$RUN_DIR"
+export XDG_DATA_HOME="$RUN_DIR/xdg-data"
+mkdir -p "$XDG_DATA_HOME"
 test -f "$CLIENT_DIR/launch.env"
 test -f "$CLIENT_DIR/launch.argv"
 test -f "$SERVER_DIR/java9args.txt"
