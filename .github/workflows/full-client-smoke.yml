@@ -1,0 +1,160 @@
+name: Full client smoke test
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  build-artifact:
+    name: Build shared client JAR
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v5
+        with:
+          fetch-depth: 0
+
+      - name: Set up Java
+        uses: actions/setup-java@v5
+        with:
+          distribution: zulu
+          java-version: |
+            8
+            17
+            21
+            25
+
+      - name: Set up Gradle
+        uses: gradle/actions/setup-gradle@v5
+        with:
+          validate-wrappers: true
+
+      - name: Build against the minimum supported AE2
+        run: |
+          chmod +x gradlew
+          ./gradlew --build-cache --info --stacktrace clean build -Pae2Version=rv3-beta-977-GTNH
+
+      - name: Stage shared client JAR
+        shell: bash
+        run: |
+          set -euo pipefail
+          mapfile -t jars < <(find build/libs -maxdepth 1 -type f -name '*.jar' ! -name '*-dev.jar' ! -name '*-sources.jar')
+          if [[ ${#jars[@]} -ne 1 ]]; then
+            printf 'Expected one client JAR, found %s\n' "${#jars[@]}" >&2
+            exit 1
+          fi
+          mkdir smoke-artifact
+          cp "${jars[0]}" smoke-artifact/appliedexpansion.jar
+
+      - name: Upload shared client JAR
+        uses: actions/upload-artifact@v7
+        with:
+          name: appliedexpansion-smoke-jar
+          path: smoke-artifact/appliedexpansion.jar
+          if-no-files-found: error
+          retention-days: 7
+
+  smoke-test:
+    name: GTNH ${{ matrix.gtnh-version }}
+    needs: build-artifact
+    runs-on: ubuntu-24.04
+    timeout-minutes: 60
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - gtnh-version: 2.9.0-beta-1
+            client-url: https://downloads.gtnewhorizons.com/Multi_mc_downloads/betas/GT_New_Horizons_2.9.0-beta-1_Java_17-25.zip
+            server-url: https://downloads.gtnewhorizons.com/ServerPacks/betas/GT_New_Horizons_2.9.0-beta-1_Server_Java_17-25.zip
+          - gtnh-version: 2.9.0-beta-2
+            client-url: https://downloads.gtnewhorizons.com/Multi_mc_downloads/betas/GT_New_Horizons_2.9.0-beta-2_Java_17-25.zip
+            server-url: https://downloads.gtnewhorizons.com/ServerPacks/betas/GT_New_Horizons_2.9.0-beta-2_Server_Java_17-25.zip
+    env:
+      SMOKE_ROOT: /tmp/appliedexpansion-smoke-${{ matrix.gtnh-version }}
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v5
+
+      - name: Set up Java
+        uses: actions/setup-java@v5
+        with:
+          distribution: zulu
+          java-version: 21
+
+      - name: Install headless client dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y xvfb xauth libgl1-mesa-dri libegl1 libegl-mesa0
+
+      - name: Download official GTNH client and server packs
+        env:
+          CLIENT_URL: ${{ matrix.client-url }}
+          SERVER_URL: ${{ matrix.server-url }}
+        run: |
+          set -euo pipefail
+          mkdir -p "$SMOKE_ROOT/client-unpacked" "$SMOKE_ROOT/client" "$SMOKE_ROOT/server" "$SMOKE_ROOT/run"
+          curl --fail --location --retry 3 --output "$SMOKE_ROOT/client.zip" "$CLIENT_URL"
+          curl --fail --location --retry 3 --output "$SMOKE_ROOT/server.zip" "$SERVER_URL"
+          unzip -q "$SMOKE_ROOT/client.zip" -d "$SMOKE_ROOT/client-unpacked"
+          client_root=$(find "$SMOKE_ROOT/client-unpacked" -mindepth 1 -maxdepth 1 -type d | head -n 1)
+          test -n "$client_root"
+          cp -a "$client_root/." "$SMOKE_ROOT/client"
+          unzip -q "$SMOKE_ROOT/server.zip" -d "$SMOKE_ROOT/server"
+
+      - name: Install Prism client
+        working-directory: ${{ env.SMOKE_ROOT }}/client
+        run: |
+          set -euo pipefail
+          curl --fail --location --retry 3 \
+            --output "$SMOKE_ROOT/prism-bootstrap" \
+            https://github.com/MalTeeez/prism-bootstrap/releases/download/1.0.3/prism-bootstrap-1.0.3-x86_64-unknown-linux-gnu
+          chmod +x "$SMOKE_ROOT/prism-bootstrap"
+          "$SMOKE_ROOT/prism-bootstrap" . \
+            --platform linux \
+            --headless \
+            --meta-url https://meta.prismlauncher.org/v1/ \
+            --xmx 3400m \
+            --jvm-arg "-Dheadlessnh.active=true" \
+            --jvm-arg "-Dheadlessnh.combined=true" \
+            --jvm-arg "-Dheadlessnh.markerdir=$SMOKE_ROOT/run" \
+            --jvm-arg "-Dheadlessnh.delay.mainmenu=5000" \
+            --jvm-arg "-Dheadlessnh.delay.serverjoin=5000" \
+            --jvm-arg "-Dheadlessnh.gate.mainmenu=server.ready" \
+            --jvm-arg "-Dheadlessnh.gate.serverloaded=serverloaded.gate" \
+            --jvm-arg "-Dheadlessnh.gate.timeout=600000" \
+            --game-dir "$SMOKE_ROOT/client/.minecraft"
+
+      - name: Install smoke-test client mods
+        run: |
+          set -euo pipefail
+          mkdir -p "$SMOKE_ROOT/client/.minecraft/mods"
+          curl --fail --location --retry 3 \
+            --output "$SMOKE_ROOT/client/.minecraft/mods/headlessnh-1.1.1.jar" \
+            https://github.com/GTNewHorizons/HeadlessNH/releases/download/1.1.1/headlessnh-1.1.1.jar
+
+      - name: Download shared client JAR
+        uses: actions/download-artifact@v8
+        with:
+          name: appliedexpansion-smoke-jar
+          path: ${{ env.SMOKE_ROOT }}/artifact
+
+      - name: Add shared JAR to client only
+        run: cp "$SMOKE_ROOT/artifact/appliedexpansion.jar" "$SMOKE_ROOT/client/.minecraft/mods/"
+
+      - name: Start client and connect to server
+        run: bash scripts/full-client-smoke.sh
+
+      - name: Upload smoke-test logs
+        if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: full-client-smoke-${{ matrix.gtnh-version }}-logs
+          path: |
+            ${{ env.SMOKE_ROOT }}/run/
+            ${{ env.SMOKE_ROOT }}/client/.minecraft/crash-reports/
+            ${{ env.SMOKE_ROOT }}/server/crash-reports/
+          if-no-files-found: warn
+          retention-days: 14
