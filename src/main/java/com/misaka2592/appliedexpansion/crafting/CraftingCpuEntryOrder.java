@@ -9,10 +9,10 @@ public final class CraftingCpuEntryOrder {
 
     private CraftingCpuEntryOrder() {}
 
-    public static <T> void sortByState(List<T> entries, ToLongFunction<? super T> activeAmount,
+    public static <T> void sortByState(List<T> entries, ToLongFunction<? super T> inProgressAmount,
         ToLongFunction<? super T> pendingAmount) {
         Collections.sort(entries, Comparator.comparingInt(entry -> {
-            if (activeAmount.applyAsLong(entry) > 0) {
+            if (inProgressAmount.applyAsLong(entry) > 0) {
                 return 0;
             }
             if (pendingAmount.applyAsLong(entry) > 0) {

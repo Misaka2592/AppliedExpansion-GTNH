@@ -15,7 +15,7 @@ public class CraftingCpuEntryOrderTest {
         List<TestItemEntry> entries = new ArrayList<>(
             Arrays.asList(new TestItemEntry("pending", 0, 1), new TestItemEntry("in-progress", 1, 0)));
 
-        CraftingCpuEntryOrder.sortByState(entries, TestItemEntry::activeAmount, TestItemEntry::pendingAmount);
+        CraftingCpuEntryOrder.sortByState(entries, TestItemEntry::inProgressAmount, TestItemEntry::pendingAmount);
 
         assertEquals(Arrays.asList("in-progress", "pending"), entryNames(entries));
     }
@@ -25,7 +25,7 @@ public class CraftingCpuEntryOrderTest {
         List<TestItemEntry> entries = new ArrayList<>(
             Arrays.asList(new TestItemEntry("existing", 0, 0), new TestItemEntry("pending", 0, 1)));
 
-        CraftingCpuEntryOrder.sortByState(entries, TestItemEntry::activeAmount, TestItemEntry::pendingAmount);
+        CraftingCpuEntryOrder.sortByState(entries, TestItemEntry::inProgressAmount, TestItemEntry::pendingAmount);
 
         assertEquals(Arrays.asList("pending", "existing"), entryNames(entries));
     }
@@ -38,7 +38,7 @@ public class CraftingCpuEntryOrderTest {
                 new TestItemEntry("existing-second", 0, 0),
                 new TestItemEntry("completed-third", 0, 0)));
 
-        CraftingCpuEntryOrder.sortByState(entries, TestItemEntry::activeAmount, TestItemEntry::pendingAmount);
+        CraftingCpuEntryOrder.sortByState(entries, TestItemEntry::inProgressAmount, TestItemEntry::pendingAmount);
 
         assertEquals(Arrays.asList("completed-first", "existing-second", "completed-third"), entryNames(entries));
     }
@@ -54,7 +54,7 @@ public class CraftingCpuEntryOrderTest {
                 new TestItemEntry("existing-second", 0, 0),
                 new TestItemEntry("pending-second", 0, 1)));
 
-        CraftingCpuEntryOrder.sortByState(entries, TestItemEntry::activeAmount, TestItemEntry::pendingAmount);
+        CraftingCpuEntryOrder.sortByState(entries, TestItemEntry::inProgressAmount, TestItemEntry::pendingAmount);
 
         assertEquals(
             Arrays.asList(
@@ -75,7 +75,7 @@ public class CraftingCpuEntryOrderTest {
                 new TestItemEntry("pending-with-storage", 0, 2),
                 new TestItemEntry("in-progress-with-pending-and-storage", 1, 3)));
 
-        CraftingCpuEntryOrder.sortByState(entries, TestItemEntry::activeAmount, TestItemEntry::pendingAmount);
+        CraftingCpuEntryOrder.sortByState(entries, TestItemEntry::inProgressAmount, TestItemEntry::pendingAmount);
 
         assertEquals(
             Arrays.asList("in-progress-with-pending-and-storage", "pending-with-storage", "existing"),
@@ -91,7 +91,7 @@ public class CraftingCpuEntryOrderTest {
                 new TestItemEntry("item-in-progress", 1, 0),
                 new TestItemEntry("fluid-in-progress", 2, 0)));
 
-        CraftingCpuEntryOrder.sortByState(entries, TestItemEntry::activeAmount, TestItemEntry::pendingAmount);
+        CraftingCpuEntryOrder.sortByState(entries, TestItemEntry::inProgressAmount, TestItemEntry::pendingAmount);
 
         assertEquals(
             Arrays.asList("item-in-progress", "fluid-in-progress", "fluid-pending", "item-existing"),
@@ -103,11 +103,11 @@ public class CraftingCpuEntryOrderTest {
         TestItemEntry first = new TestItemEntry("first", 1, 0);
         TestItemEntry second = new TestItemEntry("second", 0, 1);
         List<TestItemEntry> entries = new ArrayList<>(Arrays.asList(first, second));
-        CraftingCpuEntryOrder.sortByState(entries, TestItemEntry::activeAmount, TestItemEntry::pendingAmount);
+        CraftingCpuEntryOrder.sortByState(entries, TestItemEntry::inProgressAmount, TestItemEntry::pendingAmount);
 
         first.setAmounts(0, 0);
         second.setAmounts(1, 0);
-        CraftingCpuEntryOrder.sortByState(entries, TestItemEntry::activeAmount, TestItemEntry::pendingAmount);
+        CraftingCpuEntryOrder.sortByState(entries, TestItemEntry::inProgressAmount, TestItemEntry::pendingAmount);
 
         assertEquals(Arrays.asList("second", "first"), entryNames(entries));
     }
@@ -116,7 +116,7 @@ public class CraftingCpuEntryOrderTest {
     public void emptyCraftingOrderRemainsEmpty() {
         List<TestItemEntry> entries = new ArrayList<>();
 
-        CraftingCpuEntryOrder.sortByState(entries, TestItemEntry::activeAmount, TestItemEntry::pendingAmount);
+        CraftingCpuEntryOrder.sortByState(entries, TestItemEntry::inProgressAmount, TestItemEntry::pendingAmount);
 
         assertEquals(new ArrayList<>(), entries);
     }
@@ -126,7 +126,7 @@ public class CraftingCpuEntryOrderTest {
         TestItemEntry only = new TestItemEntry("only", 0, 1);
         List<TestItemEntry> entries = new ArrayList<>(Arrays.asList(only));
 
-        CraftingCpuEntryOrder.sortByState(entries, TestItemEntry::activeAmount, TestItemEntry::pendingAmount);
+        CraftingCpuEntryOrder.sortByState(entries, TestItemEntry::inProgressAmount, TestItemEntry::pendingAmount);
 
         assertEquals(Arrays.asList(only), entries);
     }
@@ -139,7 +139,7 @@ public class CraftingCpuEntryOrderTest {
                 new TestItemEntry("second", 0, 1),
                 new TestItemEntry("third", 0, 3)));
 
-        CraftingCpuEntryOrder.sortByState(entries, TestItemEntry::activeAmount, TestItemEntry::pendingAmount);
+        CraftingCpuEntryOrder.sortByState(entries, TestItemEntry::inProgressAmount, TestItemEntry::pendingAmount);
 
         assertEquals(Arrays.asList("first", "second", "third"), entryNames(entries));
     }
@@ -155,25 +155,25 @@ public class CraftingCpuEntryOrderTest {
     private static final class TestItemEntry {
 
         private final String name;
-        private long activeAmount;
+        private long inProgressAmount;
         private long pendingAmount;
 
-        private TestItemEntry(String name, long activeAmount, long pendingAmount) {
+        private TestItemEntry(String name, long inProgressAmount, long pendingAmount) {
             this.name = name;
-            this.activeAmount = activeAmount;
+            this.inProgressAmount = inProgressAmount;
             this.pendingAmount = pendingAmount;
         }
 
-        private long activeAmount() {
-            return activeAmount;
+        private long inProgressAmount() {
+            return inProgressAmount;
         }
 
         private long pendingAmount() {
             return pendingAmount;
         }
 
-        private void setAmounts(long activeAmount, long pendingAmount) {
-            this.activeAmount = activeAmount;
+        private void setAmounts(long inProgressAmount, long pendingAmount) {
+            this.inProgressAmount = inProgressAmount;
             this.pendingAmount = pendingAmount;
         }
     }
