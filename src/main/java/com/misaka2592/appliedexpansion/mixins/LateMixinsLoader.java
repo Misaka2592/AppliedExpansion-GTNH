@@ -1,5 +1,6 @@
 package com.misaka2592.appliedexpansion.mixins;
 
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 import java.util.Set;
@@ -15,7 +16,7 @@ import cpw.mods.fml.relauncher.FMLLaunchHandler;
 public final class LateMixinsLoader implements ILateMixinLoader {
 
     private static final String AE2_MOD_ID = "appliedenergistics2";
-    private static final List<String> CLIENT_MIXINS = Collections.singletonList("MixinCraftingCpuVisualState");
+    private static final List<String> CLIENT_MIXINS = Arrays.asList("MixinCraftingCPU", "MixinCraftingCpuVisualState");
 
     @Override
     public String getMixinConfig() {
