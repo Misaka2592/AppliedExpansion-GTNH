@@ -19,7 +19,7 @@ public abstract class MixinCraftingCpuVisualState {
     public abstract List<CraftingCpuEntry> filteredEntries();
 
     @Inject(method = "rebuildFilteredEntries", at = @At("TAIL"), remap = false)
-    private void appliedExpansion$sortByItemState(boolean hideStored, String search, CallbackInfo callbackInfo) {
+    private void appliedExpansion$sortByEntryState(boolean hideStored, String search, CallbackInfo callbackInfo) {
         CraftingCpuEntryOrder
             .sortByState(filteredEntries(), CraftingCpuEntry::getActiveAmount, CraftingCpuEntry::getPendingAmount);
     }
