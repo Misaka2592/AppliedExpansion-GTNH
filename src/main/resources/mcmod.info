@@ -1,0 +1,23 @@
+{
+  "modListVersion": 2,
+  "modList": [
+    {
+      "modid": "${modId}",
+      "name": "${modName}",
+      "description": "A client-only AE2 addon for GTNH 2.9.0 beta1-beta2.",
+      "version": "${modVersion}",
+      "mcversion": "${minecraftVersion}",
+      "url": "https://github.com/Misaka2592/AppliedExpansion-GTNH",
+      "updateUrl": "",
+      "authorList": ["Misaka2592"],
+      "credits": "",
+      "logoFile": "",
+      "screenshots": [],
+      "parent": "",
+      "requiredMods": ["appliedenergistics2"],
+      "dependencies": [],
+      "dependants": [],
+      "useDependencyInformation": true
+    }
+  ]
+}

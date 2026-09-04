@@ -1,0 +1,10 @@
+def selectedAe2Version = providers.gradleProperty("ae2Version").get()
+
+dependencies {
+    compileOnly("com.github.GTNewHorizons:Applied-Energistics-2-Unofficial:${selectedAe2Version}:dev") {
+        transitive = false
+    }
+    runtimeOnlyNonPublishable("com.github.GTNewHorizons:Applied-Energistics-2-Unofficial:${selectedAe2Version}:dev") {
+        transitive = false
+    }
+}
